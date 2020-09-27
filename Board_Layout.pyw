@@ -50,6 +50,15 @@ class Main(QMainWindow):
 		# Signal for bass pipes checkbox
 		self.checkBox_bass.clicked.connect(self.on_bass_click)
 
+		# Signal for new menubutton click
+		self.actionNew.triggered.connect(self.on_new_click)
+
+		# Signals for increasing and decreasing length and width
+		self.pushButton_incLength.clicked.connect(self.increase_length)
+		self.pushButton_decLength.clicked.connect(self.decrease_length)
+		self.pushButton_incWidth.clicked.connect(self.increase_width)
+		self.pushButton_decWidth.clicked.connect(self.decrease_width)
+
 	# def create_tables(self):
 	# 	# create tables in database
 	# 	# statements left even though they are passed
@@ -67,21 +76,21 @@ class Main(QMainWindow):
 	# 	except:
 	# 		pass
 
-		self.pipe_diameter = []
-		self.pipe_radius = []
-		self.pipeY = []
-		self.calculated_pipe = []
+		self.pipe_diameter_list = []
+		self.pipe_radius_list = []
+		self.pipe_y_list = []
+		self.calculated_pipe_list = []
 		for n in range(1, 74):
-			self.pipe_diameter.append(0)
-			self.pipe_radius.append(0)
-			self.pipeY.append(0)
-			self.calculated_pipe.append(0)
+			self.pipe_diameter_list.append(0)
+			self.pipe_radius_list.append(0)
+			self.pipe_y_list.append(0)
+			self.calculated_pipe_list.append(0)
 
-		self.XDistance = 0
-		self.DistAdded = 0
+		self.x_distance = 0
+		self.dist_added = 0
 		self.distance = 0
-		self.bassdistance = 0
-		self.firstrun = True
+		self.bass_distance = 0
+		self.first_run = True
 
 	def on_add_click(self):
 		if self.lineEdit_bodySize.text() != '':
@@ -121,117 +130,124 @@ class Main(QMainWindow):
 
 	def on_bass_click(self):
 		if self.checkBox_bass.isChecked() == True:
-			self.label_bassPipes.setEnabled(True)
+			self.label_bass.setEnabled(True)
 			self.lineEdit_bassPipeNum.setEnabled(True)
 		else:
-			self.label_bassPipes.setEnabled(False)
+			self.label_bass.setEnabled(False)
 			self.lineEdit_bassPipeNum.setEnabled(False)
 
 	def on_calculate_click(self):
 		# assign all of the pipes to numbers in a list, converted to float
 		for n in range(0, self.treeWidget_pipes.topLevelItemCount()):
 			self.temp_pipe_item = self.treeWidget_pipes.topLevelItem(n)
-			self.pipe_diameter[n + 1] = Functions.MakeFloat(self.temp_pipe_item.text(1))
-			self.pipe_radius[n + 1] = self.pipe_diameter[n + 1] / 2
+			self.pipe_diameter_list[n + 1] = Functions.MakeFloat(self.temp_pipe_item.text(1))
+			self.pipe_radius_list[n + 1] = self.pipe_diameter_list[n + 1] / 2
 
 		# Define first and last pipe
 		if self.checkBox_bass.isChecked() == True:
-			self.FirstPipe = int(self.lineEdit_bassPipeNum) + 1
+			self.first_pipe = int(self.lineEdit_bassPipeNum) + 1
 		else:
-			self.FirstPipe = 1
+			self.first_pipe = 1
 
 
 		# Get number of pipes
-		self.NumberofPipes = self.treeWidget_pipes.topLevelItemCount()
+		self.number_of_pipes = self.treeWidget_pipes.topLevelItemCount()
 
 		# Convert Information into Float to use for math
 		if self.checkBox_wood.isChecked() == True:
-			self.WoodDepth1 = Functions.MakeFloat(self.lineEdit_woodDepth1)
-			self.WoodDepth2 = Functions.MakeFloat(self.lineEdit_woodDepth2)
-		self.SideRoom = Functions.MakeFloat(self.lineEdit_sideRoom.text())
-		self.EndRoom = Functions.MakeFloat(self.lineEdit_endRoom.text())
+			self.wood_depth_1 = Functions.MakeFloat(self.lineEdit_woodDepth1)
+			self.wood_depth_2 = Functions.MakeFloat(self.lineEdit_woodDepth2)
+
+		if self.lineEdit_sideRoom.text() == "":
+			self.lineEdit_sideRoom.setText("0")
+		if self.lineEdit_endRoom.text() == "":
+			self.lineEdit_endRoom.setText("0")
+
+		self.side_room = Functions.MakeFloat(self.lineEdit_sideRoom.text())
+		self.end_room = Functions.MakeFloat(self.lineEdit_endRoom.text())
+
 
 		# --------------------- Find X Values of Pipes --------------------
 		# Pipes ARE Wood
 		if self.checkBox_wood.isChecked() == True:
-			self.TotalWidth = (self.SideRoom * 2) + self.WoodDepth1
-			self.row1x = Functions.XofRow1(self.SideRoom, self.WoodDepth1)
+			self.total_width = (self.side_room * 2) + self.wood_depth_1
+			self.row1_x = Functions.XofRow1(self.side_room, self.wood_depth_1)
 			if self.radioButton_twoRows.isChecked() == True:
-				self.TotalWidth += self.XDistance + self.WoodDepth2
-				self.row2x = Functions.XofRow2(self.row1x, self.XDistance, self.WoodDepth1, self.WoodDepth2)
+				self.total_width += self.x_distance + self.wood_depth_2
+				self.row2_x = Functions.XofRow2(self.row1_x, self.x_distance, self.wood_depth_1, self.wood_depth_2)
 			else:
-				self.row2x = "N/A"
+				self.row2_x = "N/A"
 
 		# Pipes AREN'T Wood
 		else:
-			self.TotalWidth = (self.SideRoom * 2)+self.pipe_diameter[self.FirstPipe]
-			self.row1x = Functions.XofRow1(self.SideRoom, self.pipe_diameter[self.FirstPipe])
+			self.total_width = (self.side_room * 2)+self.pipe_diameter_list[self.first_pipe]
+			self.row1_x = Functions.XofRow1(self.side_room, self.pipe_diameter_list[self.first_pipe])
 			if self.radioButton_twoRows.isChecked() == True:
-				self.TotalWidth += self.XDistance+self.pipe_diameter[self.FirstPipe+1]
-				self.row2x = Functions.XofRow2(self.row1x, self.XDistance, self.pipe_diameter[self.FirstPipe],
-									 self.pipe_diameter[self.FirstPipe+1])
+				self.total_width += self.x_distance+self.pipe_diameter_list[self.first_pipe+1]
+				self.row2_x = Functions.XofRow2(self.row1_x, self.x_distance, self.pipe_diameter_list[self.first_pipe],
+									 self.pipe_diameter_list[self.first_pipe+1])
 			else:
-				self.row2x = "N/A"
+				self.row2_x = "N/A"
 
 		if self.checkBox_bass.isChecked() == True:
-			self.rowbassx = self.TotalWidth / 2
+			self.row_bass_x = self.total_width / 2
 
 		else:
-			self.rowbassx = "N/A"
-			self.BassNum = "N/A"
+			self.row_bass_x = "N/A"
+			self.bass_num = "N/A"
 
 		# ------------------ Find Y value of Pipes------------------------
 		# Check for bass and then find Y of bass pipes and first non bass pipes
 		if self.checkBox_bass.isChecked() == True:
-			self.pipeY[self.FirstBassPipe] = self.EndRoom + (self.pipe_diameter[self.FirstBassPipe] / 2)
+			self.pipe_y_list[self.FirstBassPipe] = self.end_room + (self.pipe_diameter_list[self.FirstBassPipe] / 2)
 
-			for n in range(self.FirstBassPipe + 2, self.FirstPipe):
-				self.pipeY[n] = self.pipeY[n - 1] + (self.pipe_diameter[n - 1] / 2) + self.DistAdded + (self.pipe_diameter[n] / 2)
+			for n in range(self.FirstBassPipe + 2, self.first_pipe):
+				self.pipe_y_list[n] = self.pipe_y_list[n - 1] + (self.pipe_diameter_list[n - 1] / 2) + self.dist_added + (self.pipe_diameter_list[n] / 2)
 
-			self.pipeY[self.FirstPipe] = self.pipeY[self.FirstPipe-1] + (self.pipe_diameter[self.FirstPipe - 1] / 2) + self.DistAdded + (self.pipe_diameter[self.FirstPipe] / 2)
+			self.pipe_y_list[self.first_pipe] = self.pipe_y_list[self.first_pipe-1] + (self.pipe_diameter_list[self.first_pipe - 1] / 2) + self.dist_added + (self.pipe_diameter_list[self.first_pipe] / 2)
 		else:
-			self.pipeY[self.FirstPipe] = self.EndRoom + (self.pipe_diameter[self.FirstPipe] / 2)
+			self.pipe_y_list[self.first_pipe] = self.end_room + (self.pipe_diameter_list[self.first_pipe] / 2)
 
 		# Non bass pipes
 		if self.radioButton_twoRows.isChecked() == True:
 			# First row
-			for n in range(self.FirstPipe + 2, self.NumberofPipes + 1, 2):
-				self.pipeY[n] = self.pipeY[n - 2] + self.pipe_radius[n - 2] + self.distance + self.pipe_radius[n]
+			for n in range(self.first_pipe + 2, self.number_of_pipes + 1, 2):
+				self.pipe_y_list[n] = self.pipe_y_list[n - 2] + self.pipe_radius_list[n - 2] + self.distance + self.pipe_radius_list[n]
 			# Second row
-			for n in range(self.FirstPipe + 1, self.NumberofPipes + 1, 2):
-				if n == self.NumberofPipes:
-					if self.NumberofPipes % 2 == 0:
-						self.pipeY[n] = self.pipeY[n - 2] + self.pipe_radius[n - 2] + self.distance + self.pipe_radius[n]
+			for n in range(self.first_pipe + 1, self.number_of_pipes + 1, 2):
+				if n == self.number_of_pipes:
+					if self.number_of_pipes % 2 == 0:
+						self.pipe_y_list[n] = self.pipe_y_list[n - 2] + self.pipe_radius_list[n - 2] + self.distance + self.pipe_radius_list[n]
 					else:
-						self.pipeY[n] = (((self.pipeY[n + 1]-(self.pipe_diameter[n + 1] / 2)) - (self.pipeY[n - 1] + (self.pipe_diameter[n - 1] / 2))) / 2) + self.pipeY[n - 1] + (self.pipe_diameter[n - 1] / 2)
+						self.pipe_y_list[n] = (((self.pipe_y_list[n + 1]-(self.pipe_diameter_list[n + 1] / 2)) - (self.pipe_y_list[n - 1] + (self.pipe_diameter_list[n - 1] / 2))) / 2) + self.pipe_y_list[n - 1] + (self.pipe_diameter_list[n - 1] / 2)
 				else:
-					self.pipeY[n] = (((self.pipeY[n + 1] - (self.pipe_diameter[n + 1] / 2)) - (
-					self.pipeY[n - 1] + (self.pipe_diameter[n - 1] / 2))) / 2) + self.pipeY[n - 1] + (
-									self.pipe_diameter[n - 1] / 2)
+					self.pipe_y_list[n] = (((self.pipe_y_list[n + 1] - (self.pipe_diameter_list[n + 1] / 2)) - (
+					self.pipe_y_list[n - 1] + (self.pipe_diameter_list[n - 1] / 2))) / 2) + self.pipe_y_list[n - 1] + (
+									self.pipe_diameter_list[n - 1] / 2)
 		else:
 			#Single row
-			for n in range(self.FirstPipe + 1, self.NumberofPipes + 1):
-				self.pipeY[n] = self.pipeY[n - 1] + (self.pipe_diameter[n - 1] / 2) + self.distance + (self.pipe_diameter[n] / 2)
-		for n in range(self.FirstPipe + 1, self.NumberofPipes + 1):
-			if self.pipeY[n] - self.pipeY[n - 1] < 0.75:
-				self.pipeY[n] = self.pipeY[n - 1] + 0.75
+			for n in range(self.first_pipe + 1, self.number_of_pipes + 1):
+				self.pipe_y_list[n] = self.pipe_y_list[n - 1] + (self.pipe_diameter_list[n - 1] / 2) + self.distance + (self.pipe_diameter_list[n] / 2)
+		for n in range(self.first_pipe + 1, self.number_of_pipes + 1):
+			if self.pipe_y_list[n] - self.pipe_y_list[n - 1] < 0.75:
+				self.pipe_y_list[n] = self.pipe_y_list[n - 1] + 0.75
 
 		# Show results on result window
-		if self.firstrun:
-			self.LengthPosition = 0
+		if self.first_run:
+			self.length_position = 0
 			self.treeWidget_calculated.clear()
 			
-			for x in range(1, self.NumberofPipes+1):
-				self.calculated_pipe[x] = [str(x), str(Functions.rulerfrac(self.pipeY[x]))]
-				self.treeWidget_calculated.addTopLevelItem(QTreeWidgetItem(self.calculated_pipe[x]))
+			for x in range(1, self.number_of_pipes+1):
+				self.calculated_pipe_list[x] = [str(x), str(Functions.rulerfrac(self.pipe_y_list[x]))]
+				self.treeWidget_calculated.addTopLevelItem(QTreeWidgetItem(self.calculated_pipe_list[x]))
 
-			if self.XDistance < 0:
-				self.label_xDistance.setText("{} {}".format("X Overlap:", Functions.rulerfrac(abs(self.XDistance))))
+			if self.x_distance < 0:
+				self.label_xDistance.setText("{} {}".format("X Overlap:", Functions.rulerfrac(abs(self.x_distance))))
 			else:
-				self.label_xDistance.setText("{} {}".format("X Distance:", Functions.rulerfrac(abs(self.XDistance))))
+				self.label_xDistance.setText("{} {}".format("X Distance:", Functions.rulerfrac(abs(self.x_distance))))
 
 			self.label_yDistance.setText("{} {}".format("Y Distance:", self.distance))
-			self.label_distAdded.setText("{} {}".format("Distance Added:", self.DistAdded))
+			self.label_distAdded.setText("{} {}".format("Distance Added:", self.dist_added))
 
 			if self.lineEdit_sideRoom.text() == "":
 				self.label_sideLength.setText("{} {}".format("Side Length:", 0))
@@ -247,37 +263,214 @@ class Main(QMainWindow):
 
 			self.end_length = Functions.MakeFloat(self.lineEdit_endRoom.text())
 		else:
-			self.Update()
+			self.update()
 
 		#Check if each row is being used and convert into fraction if so
-		if isinstance(self.row1x, float):
-			self.row1x = Functions.rulerfrac(self.row1x)
-		if isinstance(self.row2x, float):
-			self.row2x = Functions.rulerfrac(self.row2x)
+		if isinstance(self.row1_x, float):
+			self.row1_x = Functions.rulerfrac(self.row1_x)
+		if isinstance(self.row2_x, float):
+			self.row2_x = Functions.rulerfrac(self.row2_x)
 
 		#Create labels to display rows
-		if self.firstrun:
-			self.label_rowOne.setText("{} {}".format("Row One:", self.row1x))
-			self.label_rowTwo.setText("{} {}".format("Row Two:", self.row2x))
+		if self.first_run:
+			self.label_rowOne.setText("{} {}".format("Row One:", self.row1_x))
+			self.label_rowTwo.setText("{} {}".format("Row Two:", self.row2_x))
 			if self.checkBox_bass.isChecked() == True:
-				self.label_middleRow.setText("{} {}".format("Middle Row:", Functions.rulerfrac(self.rowbassx)))
-				self.label_bassPipes.setText("{} {}".format("Bass Pipes:", self.BassNum.get()))
+				self.label_middleRow.setText("{} {}".format("Middle Row:", Functions.rulerfrac(self.row_bass_x)))
+				self.label_bassPipes.setText("{} {}".format("Bass Pipes:", self.bass_num.get()))
 			else:
-				self.label_middleRow.setText("{} {}".format("Middle Row:", self.rowbassx))
-				self.label_bassPipes.setText("{} {}".format("Bass Pipes:", self.BassNum))
+				self.label_middleRow.setText("{} {}".format("Middle Row:", self.row_bass_x))
+				self.label_bassPipes.setText("{} {}".format("Bass Pipes:", self.bass_num))
 
-			self.XDistance = 0
-			self.DistAdded = 0
+			self.x_distance = 0
+			self.dist_added = 0
 
 		#Calculate total length of toe board
-		self.TotalLength = self.pipeY[self.NumberofPipes] + self.pipe_radius[self.NumberofPipes] + self.end_length
+		self.total_length = self.pipe_y_list[self.number_of_pipes] + self.pipe_radius_list[self.number_of_pipes] + self.end_length
 
-		if self.firstrun:
-			self.label_totalWidth.setText("{} {}".format("Total Width:", Functions.rulerfrac(self.TotalWidth)))
+		if self.first_run:
+			self.label_totalWidth.setText("{} {}".format("Total Width:", Functions.rulerfrac(self.total_width)))
 
-		self.label_totalLength.setText("{} {}".format("Total Length:", Functions.rulerfrac(self.TotalLength)))
+		self.label_totalLength.setText("{} {}".format("Total Length:", Functions.rulerfrac(self.total_length)))
 
-		self.firstrun = False
+		self.first_run = True
+
+	# Clear all inputs and reset all checkboxes and radio buttons
+	def on_new_click(self):
+		self.lineEdit_jobName.clear()
+		self.lineEdit_rankName.clear()
+		self.lineEdit_sideRoom.clear()
+		self.lineEdit_endRoom.clear()
+
+		self.radioButton_twoRows.click()
+		self.checkBox_wood.setCheckState(False)
+		self.lineEdit_woodDepth1.clear()
+		self.lineEdit_woodDepth2.clear()
+		self.checkBox_bass.setCheckState(False)
+		self.lineEdit_bassPipeNum.clear()
+
+		self.treeWidget_pipes.clear()
+		self.lineEdit_bodySize.clear()
+		self.lineEdit_bulkAddNum.clear()
+
+		self.treeWidget_calculated.clear()
+		self.label_rowOne.setText("Row One:")
+		self.label_rowTwo.setText("Row Two:")
+		self.label_middleRow.setText("Middle Row:")
+		self.label_bassPipes.setText("Bass Pipes:")
+
+		self.label_xDistance.setText("X Distance:")
+		self.label_yDistance.setText("Y Distance:")
+		self.label_distAdded.setText("Distance Added:")
+		self.label_sideLength.setText("Side Length:")
+		self.label_endLength.setText("End Length:")
+
+		self.label_totalLength.setText("Total Length:")
+		self.label_totalWidth.setText("Total Width:")
+
+
+	# Method to update result page
+	def update(self):
+		self.label_totalLength.setText("{} {}".format("Total Length:", Functions.rulerfrac(self.total_length)))
+		self.label_totalWidth.setText("{} {}".format("Total Width:", Functions.rulerfrac(self.total_width)))
+		self.label_rowOne.setText("{} {}".format("Row One:", Functions.rulerfrac(self.row1_x)))
+		self.label_rowTwo.setText("{} {}".format("Row Two:", Functions.rulerfrac(self.row2_x)))
+
+		if self.checkBox_bass.isChecked():
+			self.label_middleRow.setText("{} {}".format("Middle Row:", Functions.rulerfrac(self.row_bass_x)))
+		else:
+			self.label_middleRow.setText("{} {}".format("Middle Row:", self.row_bass_x))
+
+		self.treeWidget_calculated.clear()
+
+		for x in range(1, self.number_of_pipes+1):
+			self.calculated_pipe_list[x] = [str(x), str(Functions.rulerfrac(self.pipe_y_list[x]))]
+			self.treeWidget_calculated.addTopLevelItem(QTreeWidgetItem(self.calculated_pipe_list[x]))
+
+		if self.x_distance < 0:
+			self.x_relation = "Overlap"
+			self.label_xDistance.setText("{} {}".format("X Overlap:", Functions.rulerfrac(abs(self.x_distance))))
+		else:
+			self.x_relation = "Distance"
+			self.label_xDistance.setText("{} {}".format("X Distance:", Functions.rulerfrac(self.x_distance)))
+
+		self.label_yDistance.setText("{} {}".format("Y Distance:", Functions.rulerfrac(self.distance)))
+		self.label_distAdded.setText("{} {}".format("Dist Added:", Functions.rulerfrac(self.dist_added)))
+		self.label_sideLength.setText("{} {}".format("Sides:", self.lineEdit_sideRoom.text()))
+		self.label_endLength.setText("{} {}".format("Ends:", self.lineEdit_endRoom.text()))
+
+	#Method for when length is increased
+	def increase_length(self):
+		self.distance += 0.0625
+		self.length_position += 1
+		self.dist_added = self.length_position * 0.0625
+		self.first_run = False
+		self.on_calculate_click()
+
+	#Method for when length is decreased
+	def decrease_length(self):
+		if self.length_position > 0:
+			self.distance -= 0.0625
+			self.length_position -= 1
+			self.dist_added = self.length_position * 0.0625
+			self.first_run = False
+			self.on_calculate_click()
+
+	#Method for when width is increased
+	def increase_width(self):
+		self.x_distance += .0625
+
+		if self.x_distance >= 0:
+			self.distance = 0
+		else:
+			if self.checkBox_wood.isChecked():
+				self.width_position += 1
+
+			self.pipe_1_width = self.pipe_diameter_list[self.first_pipe]
+			self.pipe_2_width = self.pipe_diameter_list[self.first_pipe + 1]
+			self.pipe_3_width = self.pipe_diameter_list[self.first_pipe + 2]
+
+			if not self.checkBox_wood.isChecked():
+				self.chord_length_1 = Functions.chordlength(self.pipe_1_width / 2, ((self.pipe_1_width / 2) - abs(self.x_distance)))
+				self.chord_length_2 = Functions.chordlength(self.pipe_2_width / 2, ((self.pipe_2_width / 2) - abs(self.x_distance)))
+				self.chord_length_3 = Functions.chordlength(self.pipe_3_width / 2, ((self.pipe_3_width / 2) - abs(self.x_distance)))
+				self.chord_remainder_1 = (self.pipe_1_width - self.chord_length_1) / 2
+				self.chord_remainder_3 = (self.pipe_3_width - self.chord_length_3) / 2
+
+				self.distance = self.chord_length_2 - (self.chord_remainder_1 + self.chord_remainder_3)
+
+				if self.distance < 0:
+					self.distance = 0
+
+				self.length_position = 0
+				self.dist_added = 0
+
+		self.first_run = False
+		self.on_calculate_click()
+
+	#Method for when width is decreased
+	def decrease_width(self):
+		if self.x_distance > 0:
+			self.x_distance = self.x_distance - .0625
+		else:
+			if self.checkBox_wood.isChecked():
+				if self.width_position > 0:
+					self.width_position -= 1
+					self.x_distance -= .0625
+				else:
+					QMessageBox.warning(self, "Error", "Cannot decrease width if pipes are wood!", QMessageBox.Ok)
+
+			else:
+				if self.checkBox_wood.isChecked():
+					if (self.side_room * 2) + self.pipe_diameter_list[self.FirstBassPipe] >= self.TotalWidth:
+						QMessageBox.warning(self, "Error", "Cannot decrease width any more!", QMessageBox.Ok)
+					else:
+						self.x_distance -= .0625
+
+						self.pipe_1_width = self.pipe_diameter_list[self.first_pipe]
+						self.pipe_2_width = self.pipe_diameter_list[self.first_pipe + 1]
+						self.pipe_3_width = self.pipe_diameter_list[self.first_pipe + 2]
+
+						self.chord_length_1 = Functions.chordlength(self.pipe_1_width / 2, ((self.pipe_1_width / 2) - abs(self.x_distance)))
+						self.chord_length_2 = Functions.chordlength(self.pipe_2_width / 2, ((self.pipe_2_width / 2) - abs(self.x_distance)))
+						self.chord_length_3 = Functions.chordlength(self.pipe_3_width / 2, ((self.pipe_3_width / 2) - abs(self.x_distance)))
+						self.chord_remainder_1 = (self.pipe_1_width - self.chord_length_1) / 2
+						self.chord_remainder_3 = (self.pipe_3_width - self.chord_length_3) / 2
+
+						self.distance = self.chord_length_2 - (self.chord_remainder_1 + self.chord_remainder_3)
+
+						if self.distance < 0:
+							self.distance = 0
+
+						self.length_position = 0
+						self.dist_added = 0
+				else:
+					self.x_distance -= .0625
+
+					self.pipe_1_width = self.pipe_diameter_list[self.first_pipe]
+					self.pipe_2_width = self.pipe_diameter_list[self.first_pipe + 1]
+					self.pipe_3_width = self.pipe_diameter_list[self.first_pipe + 2]
+
+					self.chord_length_1 = Functions.chordlength(self.pipe_1_width / 2,
+															  ((self.pipe_1_width / 2) - abs(self.x_distance)))
+					self.chord_length_2 = Functions.chordlength(self.pipe_2_width / 2,
+															  ((self.pipe_2_width / 2) - abs(self.x_distance)))
+					self.chord_length_3 = Functions.chordlength(self.pipe_3_width / 2,
+															  ((self.pipe_3_width / 2) - abs(self.x_distance)))
+					self.chord_remainder_1 = (self.pipe_1_width - self.chord_length_1) / 2
+					self.chord_remainder_3 = (self.pipe_3_width - self.chord_length_3) / 2
+
+					self.distance = self.chord_length_2 - (self.chord_remainder_1 + self.chord_remainder_3)
+
+					if self.distance < 0:
+						self.distance = 0
+
+					self.length_position = 0
+					self.dist_added = 0
+
+		self.first_run = False
+		self.on_calculate_click()
+
 
 
 if __name__ == '__main__':
